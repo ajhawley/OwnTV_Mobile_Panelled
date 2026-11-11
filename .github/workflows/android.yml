@@ -52,8 +52,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          PIN=$(sed -n 's/^owntvCore = "\(.*\)"$/\1/p' gradle/libs.versions.toml)
-          [ -n "$PIN" ] || { echo "::error::Could not read owntvCore from gradle/libs.versions.toml."; exit 1; }
+          PIN=$(sed -n 's/^owntvCore = "\(.*\)"$/\1/p' android/mobile/gradle/libs.versions.toml)
+          [ -n "$PIN" ] || { echo "::error::Could not read owntvCore from android/mobile/gradle/libs.versions.toml."; exit 1; }
 
           # The branch name carries the version too, so a mismatch means the two halves of the bump
           # disagree about what is being pinned.
@@ -76,8 +76,8 @@ jobs:
           # here. A stale copy silently strips a language out of the APK with a green build.
           curl -fsSL -o /tmp/locales.core.json \
             "https://raw.githubusercontent.com/ahXN00/OwnTV_Core/core-$PIN/tools/i18n/locales.json"
-          if ! diff -u /tmp/locales.core.json tools/i18n/locales.json; then
-            echo "::error::tools/i18n/locales.json differs from core's copy at core-$PIN."
+          if ! diff -u /tmp/locales.core.json android/mobile/tools/i18n/locales.json; then
+            echo "::error::android/mobile/tools/i18n/locales.json differs from core's copy at core-$PIN."
             exit 1
           fi
 
@@ -110,6 +110,7 @@ jobs:
       # One variant, not `test`/`lint` across every flavor: standard+debug is the variant the JVM
       # tests are written against, and the ABI flavors differ only in the packaged native libs.
       - name: Unit tests
+        working-directory: android/mobile
         run: |
           chmod +x ./gradlew
           ./gradlew testStandardDebugUnitTest --stacktrace
@@ -117,6 +118,7 @@ jobs:
       # abortOnError = true in app/build.gradle.kts, so this fails the job on a lint error.
       - name: Lint
         if: always()   # report both verdicts in one run instead of one failure at a time
+        working-directory: android/mobile
         run: ./gradlew lintStandardDebug --stacktrace
 
       - name: Upload test and lint reports
@@ -125,9 +127,9 @@ jobs:
         with:
           name: check-reports
           path: |
-            app/build/reports/tests/**
-            app/build/reports/lint-results-*.html
-            app/build/reports/lint-results-*.txt
+            android/mobile/app/build/reports/tests/**
+            android/mobile/app/build/reports/lint-results-*.html
+            android/mobile/app/build/reports/lint-results-*.txt
           if-no-files-found: warn
 
   build:
@@ -231,6 +233,7 @@ jobs:
           # OWNTV_EDGE_KEY is exported into $GITHUB_ENV by the step above; app/build.gradle.kts reads
           # it as the env var it always did.
         run: |
+          cd "$GITHUB_WORKSPACE/android/mobile"
           chmod +x ./gradlew
           if [ -n "$KEYSTORE_FILE" ]; then
             echo "Building signed release APKs (both ABI flavors)"
@@ -238,8 +241,8 @@ jobs:
             # Product flavors split the output by flavor subfolder:
             #   standard/release  -> arm (arm64-v8a + armeabi-v7a) — real phones and tablets
             #   x86_64/release    -> x86_64 — the emulator
-            ARM_SRC=$(ls app/build/outputs/apk/standard/release/*.apk | head -n1)
-            X86_SRC=$(ls app/build/outputs/apk/x86_64/release/*.apk | head -n1)
+            ARM_SRC=$(ls "$GITHUB_WORKSPACE/android/mobile/app/build/outputs/apk/standard/release/"*.apk | head -n1)
+            X86_SRC=$(ls "$GITHUB_WORKSPACE/android/mobile/app/build/outputs/apk/x86_64/release/"*.apk | head -n1)
             echo "Built arm:    $ARM_SRC"
             echo "Built x86_64: $X86_SRC"
             echo "ARM_SRC=$ARM_SRC" >> "$GITHUB_ENV"
@@ -247,7 +250,7 @@ jobs:
           else
             echo "Building debug APK"
             ./gradlew assembleDebug
-            SRC=$(ls app/build/outputs/apk/standard/debug/*.apk | head -n1)
+            SRC=$(ls "$GITHUB_WORKSPACE/android/mobile/app/build/outputs/apk/standard/debug/"*.apk | head -n1)
             echo "Built: $SRC"
             echo "ARM_SRC=$SRC" >> "$GITHUB_ENV"
           fi
@@ -297,12 +300,12 @@ jobs:
           # Take "## <tag>" up to the next
           # "## v" header; the header may carry a date or "unreleased" tail ("## v0.1.0 — 2026-09-01")
           # or nothing at all.
-          if [ -f CHANGELOG.md ]; then
+          if [ -f android/mobile/CHANGELOG.md ]; then
             awk -v ver="$TAG" '
               $0 ~ ("^## " ver "([ \t]|$)") { flag=1; next }
               /^## v/ && flag { flag=0 }
               flag { print }
-            ' CHANGELOG.md > dist/RELEASE_NOTES.md || true
+            ' android/mobile/CHANGELOG.md > dist/RELEASE_NOTES.md || true
             # Trim leading/trailing blank lines.
             sed -i -e '/./,$!d' dist/RELEASE_NOTES.md
             awk 'NF{p=NR} {a[NR]=$0} END{for(i=1;i<=p;i++) print a[i]}' \

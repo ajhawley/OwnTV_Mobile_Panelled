@@ -68,7 +68,7 @@ jobs:
           # The diff must be only the two files the bump workflow is allowed to touch. A pin bump
           # that changed anything else did not come from that workflow, whatever the branch is called.
           CHANGED=$(gh pr diff "$NUMBER" --repo "$REPO" --name-only | sort)
-          ALLOWED=$(printf '%s\n' "gradle/libs.versions.toml" "tools/i18n/locales.json" | sort)
+          ALLOWED=$(printf '%s\n' "android/mobile/gradle/libs.versions.toml" "android/mobile/tools/i18n/locales.json" | sort)
           if [ -n "$(comm -23 <(echo "$CHANGED") <(echo "$ALLOWED"))" ]; then
             echo "::warning::PR #$NUMBER touches files outside the pin bump. Leaving it for a human."
             printf '%s\n' "$CHANGED"

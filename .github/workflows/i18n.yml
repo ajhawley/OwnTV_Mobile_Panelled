@@ -70,9 +70,9 @@ jobs:
           set -euo pipefail
           if [ "$EVENT_NAME" = "pull_request" ]; then
             BASE_SHA="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
-            python3 tools/i18n/check_hardcoded_strings.py verify-ci --base-sha "$BASE_SHA"
+            python3 android/mobile/tools/i18n/check_hardcoded_strings.py verify-ci --base-sha "$BASE_SHA"
           else
-            python3 tools/i18n/check_hardcoded_strings.py verify --bootstrap
+            python3 android/mobile/tools/i18n/check_hardcoded_strings.py verify --bootstrap
           fi
 
   validate:
@@ -84,9 +84,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Locale-stable Kotlin number formatting
-        run: python3 tools/i18n/check_number_locale.py
+        run: python3 android/mobile/tools/i18n/check_number_locale.py
       - name: Bounded Compose text overflow
-        run: python3 tools/i18n/check_text_overflow.py
+        run: python3 android/mobile/tools/i18n/check_text_overflow.py
 
   pseudo:
     # Builds the debug + release standard APKs and inspects their resource tables. Heavier than the
@@ -108,12 +108,12 @@ jobs:
           # action still asks for it by default, which fails the whole setup step.
           packages: 'platform-tools'
       - name: Assemble standard debug + release APKs
-        run: ./gradlew :app:assembleStandardDebug :app:assembleStandardRelease --console=plain
+        run: cd android/mobile && ./gradlew :app:assembleStandardDebug :app:assembleStandardRelease --console=plain
       - name: Verify pseudolocale packaging
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
-          DBG=$(ls app/build/outputs/apk/standard/debug/*.apk | head -1)
-          REL=$(ls app/build/outputs/apk/standard/release/*.apk | head -1)
-          python3 tools/i18n/check_pseudo_locales.py --apk "$DBG" --mode debug
-          python3 tools/i18n/check_pseudo_locales.py --apk "$REL" --mode release
+          DBG=$(ls android/mobile/app/build/outputs/apk/standard/debug/*.apk | head -1)
+          REL=$(ls android/mobile/app/build/outputs/apk/standard/release/*.apk | head -1)
+          python3 android/mobile/tools/i18n/check_pseudo_locales.py --apk "$DBG" --mode debug
+          python3 android/mobile/tools/i18n/check_pseudo_locales.py --apk "$REL" --mode release
