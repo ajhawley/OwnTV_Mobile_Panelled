@@ -2,7 +2,10 @@ package tv.own.owntv.mobile.ui.setup
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -99,8 +102,13 @@ fun AddSourceForm(
     modifier: Modifier = Modifier,
     initial: SourceFormValues? = null,
     onSave: ((SourceFormValues) -> Unit)? = null,
+    panelServers: List<PanelServer> = emptyList(),
+    panelServersLoading: Boolean = false,
+    panelServersError: String? = null,
+    onRefreshPanelServers: (() -> Unit)? = null,
 ) {
     val editing = onSave != null
+    var serverMenuExpanded by remember { mutableStateOf(false) }
     var kind by rememberSaveable { mutableStateOf(initial?.kind ?: SourceKind.XTREAM) }
     var name by rememberSaveable { mutableStateOf(initial?.name.orEmpty()) }
     var server by rememberSaveable {
@@ -149,10 +157,12 @@ fun AddSourceForm(
     val hasAnySection = syncLive != SyncScopeChoice.Off ||
         syncMovies != SyncScopeChoice.Off ||
         syncSeries != SyncScopeChoice.Off
+    val serverIsAllowed = editing || panelServers.any { it.baseUrl == server }
     val canStart = when (kind) {
         SourceKind.XTREAM ->
             // On an edit the password field starts empty and left empty keeps the stored one.
-            server.isNotBlank() && username.isNotBlank() && (password.isNotBlank() || editing) && hasAnySection
+            server.isNotBlank() && serverIsAllowed && username.isNotBlank() &&
+                (password.isNotBlank() || editing) && hasAnySection
         SourceKind.M3U -> m3uUrl.isNotBlank()
         SourceKind.STALKER -> StalkerClient.isValidPortalUrl(portalUrl) && macValid && hasAnySection
     }
@@ -211,10 +221,62 @@ fun AddSourceForm(
         when (kind) {
             SourceKind.XTREAM -> {
                 item(key = "server") {
-                    StageTextRow(
-                        MobileIcons.Translate, stringResource(R.string.setup_server_url), server, { server = it },
-                        placeholder = stringResource(R.string.setup_server_example), keyboardType = KeyboardType.Uri,
-                    )
+                    if (editing) {
+                        // Editing an existing source retains the original manual server field.
+                        StageTextRow(
+                            MobileIcons.Translate, stringResource(R.string.setup_server_url), server, { server = it },
+                            placeholder = stringResource(R.string.setup_server_example), keyboardType = KeyboardType.Uri,
+                        )
+                    } else {
+                        Box(Modifier.fillMaxWidth()) {
+                            val selectedName = panelServers.firstOrNull {
+                                it.baseUrl == server
+                            }?.name
+
+                            StageSettingRow(
+                                icon = MobileIcons.Translate,
+                                title = stringResource(R.string.setup_server_url),
+                                subtitle = when {
+                                    panelServersError != null -> panelServersError
+                                    panelServersLoading -> stringResource(R.string.setup_panel_server_loading)
+                                    panelServers.isEmpty() -> stringResource(R.string.setup_panel_server_empty)
+                                    else -> stringResource(R.string.setup_panel_server_choose)
+                                },
+                                onClick = {
+                                    if (panelServers.isNotEmpty()) {
+                                        serverMenuExpanded = true
+                                    } else if (!panelServersLoading) {
+                                        onRefreshPanelServers?.invoke()
+                                    }
+                                },
+                                trailing = {
+                                    StageRowValue(
+                                        value = selectedName ?: if (panelServersLoading) stringResource(R.string.setup_panel_server_loading_short) else stringResource(R.string.setup_panel_server_select),
+                                        chevron = if (panelServers.isNotEmpty()) {
+                                            StageChevron.DOWN
+                                        } else {
+                                            StageChevron.NONE
+                                        },
+                                    )
+                                },
+                            )
+
+                            DropdownMenu(
+                                expanded = serverMenuExpanded,
+                                onDismissRequest = { serverMenuExpanded = false },
+                            ) {
+                                panelServers.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option.name) },
+                                        onClick = {
+                                            server = option.baseUrl
+                                            serverMenuExpanded = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 item(key = "user") { StageTextRow(MobileIcons.Person, stringResource(R.string.setup_username), username, { username = it }) }
                 item(key = "pass") {

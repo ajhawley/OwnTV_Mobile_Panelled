@@ -104,6 +104,7 @@ fun SetupFlow(
     val vm: SetupViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
+    val panelServerState by vm.panelServerState.collectAsStateWithLifecycle()
     // No way to cancel means there is nothing behind this flow, which is exactly what a first run is.
     val firstRun = onCancel == null
     val entryStep = when {
@@ -241,11 +242,16 @@ fun SetupFlow(
                 onBack = { if (entryStep == Step.EXISTING) leave() else step = Step.ADD_CONTENT },
             )
             Step.FORM -> Column(Modifier.fillMaxSize().then(if (firstRun) Modifier.stageBackground() else Modifier).statusBarsPadding()) {
+                LaunchedEffect(Unit) { vm.refreshPanelServers() }
                 // "Type it here", from the wizard or Settings' Add a source: the page's own title and the way back.
                 FormHeader(firstRun = firstRun, onBack = backFromForm)
                 AddSourceForm(
                     // Remote's submission fills the form; the user still presses Start import.
                     initial = remoteInitial,
+                    panelServers = panelServerState.servers,
+                    panelServersLoading = panelServerState.isLoading,
+                    panelServersError = panelServerState.error,
+                    onRefreshPanelServers = vm::refreshPanelServers,
                     onStartXtream = { name, server, user, pass, ua, referer, refresh, live, movies, series, hls ->
                         importName = name.ifBlank { defaultIptvName }
                         vm.startXtream(importName!!, server, user, pass, ua, referer, refresh, live, movies, series, hls)

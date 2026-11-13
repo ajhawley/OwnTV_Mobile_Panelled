@@ -8,7 +8,7 @@ name: Android CI
 #                so PR branches only get the test/lint verdict, never an APK.
 on:
   push:
-    branches: [ main ]
+    branches: [ main, custom-integration ]
     tags: [ "v*" ]
   pull_request:
     branches: [ main ]

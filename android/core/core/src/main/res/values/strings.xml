@@ -299,4 +299,17 @@
     <string name="common_weather_degrees_city"><xliff:g id="temperature">%1$d</xliff:g>° <xliff:g id="city">%2$s</xliff:g></string>
     <!-- Translators: Button that closes a prompt without acting on it, e.g. a programme reminder. -->
     <string name="common_dismiss">Dismiss</string>
+
+    <!-- Translators: Status while the app retrieves the server choices from the administrator panel. -->
+    <string name="setup_panel_server_loading">Loading available servers…</string>
+    <!-- Translators: Shown when the administrator panel has no enabled servers; tapping the row retries. -->
+    <string name="setup_panel_server_empty">No servers available. Tap to retry.</string>
+    <!-- Translators: Explanation above the server picker; users choose from the administrator's configured servers. -->
+    <string name="setup_panel_server_choose">Choose a server configured by your administrator.</string>
+    <!-- Translators: Compact status shown in the server picker while choices are loading. -->
+    <string name="setup_panel_server_loading_short">Loading…</string>
+    <!-- Translators: Compact placeholder shown before a server has been selected. -->
+    <string name="setup_panel_server_select">Select</string>
+    <!-- Translators: Error shown when the app cannot retrieve server choices from the administrator panel. -->
+    <string name="setup_panel_server_load_error">Unable to load servers. Check your connection and tap to retry.</string>
 </resources>

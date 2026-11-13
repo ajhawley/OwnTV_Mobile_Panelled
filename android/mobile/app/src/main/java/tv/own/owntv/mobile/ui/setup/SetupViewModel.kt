@@ -2,8 +2,12 @@ package tv.own.owntv.mobile.ui.setup
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,6 +43,35 @@ class SetupViewModel(
     private val companion: tv.own.owntv.core.companion.CompanionController,
     private val profiles: tv.own.owntv.core.profile.ProfileManager,
 ) : ViewModel() {
+
+    private val panelServerRepository = PanelServerRepository()
+    private val _panelServerState = MutableStateFlow(PanelServerUiState())
+    val panelServerState = _panelServerState.asStateFlow()
+    private var panelServerJob: Job? = null
+
+    fun refreshPanelServers() {
+        if (_panelServerState.value.isLoading) return
+
+        panelServerJob?.cancel()
+        panelServerJob = viewModelScope.launch {
+            _panelServerState.value = _panelServerState.value.copy(
+                isLoading = true,
+                error = null,
+            )
+
+            try {
+                val servers = panelServerRepository.loadServers()
+                _panelServerState.value = PanelServerUiState(servers = servers)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _panelServerState.value = _panelServerState.value.copy(
+                    isLoading = false,
+                    error = context.getString(R.string.setup_panel_server_load_error),
+                )
+            }
+        }
+    }
 
     // ---- Remote: another device fills the form in a browser; the phone pre-fills its own form. ----
     val remoteState get() = companion.state
