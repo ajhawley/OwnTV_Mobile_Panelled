@@ -21,8 +21,10 @@ import tv.own.owntv.core.player.PlayerBudget
  */
 object LiveDiagnosticsLog {
     const val TAG = "OwnTV-LivePreviewEngine"
+    // Set true to restore live playback diagnostics.
+    const val COLLECTION_ENABLED = false
 
-    @Volatile var enabled: Boolean = CoreBuildInfo.debug || CoreBuildInfo.diagnosticBuild
+    @Volatile var enabled: Boolean = COLLECTION_ENABLED && (CoreBuildInfo.debug || CoreBuildInfo.diagnosticBuild)
 
     private const val MAX_EVENTS = 1000
 
@@ -59,6 +61,7 @@ object LiveDiagnosticsLog {
 
     /** Call once with an app [Context] so events can be flushed to [file]. Safe to call repeatedly. */
     fun init(context: Context) {
+        if (!COLLECTION_ENABLED) return
         if (logFile != null) return
         maxFileBytes = if (PlayerBudget.of(context).lowSpec) MAX_FILE_BYTES_LOW_SPEC else MAX_FILE_BYTES
         runCatching {
@@ -70,6 +73,7 @@ object LiveDiagnosticsLog {
     /** Record one diagnostic line. Always kept in the in-memory ring; also written to Logcat + the rolling
      *  file when [enabled]. [message] must already be redacted of URLs/credentials by the caller. */
     fun event(message: String) {
+        if (!COLLECTION_ENABLED) return
         val line = "${timeFmt.format(LocalDateTime.now())} $message"
         synchronized(lock) {
             ring.addLast(line)
@@ -108,8 +112,8 @@ object LiveDiagnosticsLog {
     }
 
     /** Oldest-first snapshot of the in-memory ring buffer (e.g. for an in-app export action). */
-    fun snapshot(): String = synchronized(lock) { ring.joinToString("\n") }
+    fun snapshot(): String = if (!COLLECTION_ENABLED) "" else synchronized(lock) { ring.joinToString("\n") }
 
     /** Path of the rolling diagnostic file on disk, once [init] has run. */
-    fun file(): File? = logFile
+    fun file(): File? = if (!COLLECTION_ENABLED) null else logFile
 }

@@ -129,10 +129,7 @@ fun SettingsPlaylistsPage(
                 StageMenuItem(stringResource(R.string.settings_sources_resync_now_full), onClick = { vm.resync(source); close() }, icon = MobileIcons.Refresh)
                 StageMenuItem(stringResource(R.string.settings_sources_resync_remove_full), onClick = { vm.resync(source, removeMissing = true); close() }, icon = MobileIcons.Refresh)
             }
-            StageMenuItem(stringResource(R.string.settings_sources_edit), onClick = { editSource = source; close() }, icon = MobileIcons.Edit)
             StageMenuItem(stringResource(R.string.settings_sources_clean_names), onClick = { namesFor = source; close() }, icon = MobileIcons.AutoAwesome)
-            // "Info", not "Test": the expensive measurement lives behind Re-test inside the sheet.
-            StageMenuItem(stringResource(R.string.settings_sources_info), onClick = { vm.testSource(source); close() }, icon = MobileIcons.Info)
             StageMenuItem(
                 stringResource(R.string.setup_auto_refresh),
                 onClick = { refreshFor = source; close() },

@@ -304,6 +304,7 @@ private fun EpgSourceSheet(
 ) {
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var url by remember { mutableStateOf(initial?.url.orEmpty()) }
+    var urlEdited by remember { mutableStateOf(false) }
     var agent by remember { mutableStateOf(initial?.userAgent.orEmpty()) }
     var refresh by remember { mutableStateOf(initialAutoRefresh) }
     var logos by remember { mutableStateOf(initialUseLogos) }
@@ -332,8 +333,11 @@ private fun EpgSourceSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
             StageField(
-                value = url,
-                onValueChange = { url = it },
+                value = if (!urlEdited) "" else url,
+                onValueChange = {
+                    urlEdited = true
+                    url = it
+                },
                 label = stringResource(R.string.settings_epg_sources_url),
                 placeholder = stringResource(R.string.settings_epg_sources_url_hint),
                 keyboardType = KeyboardType.Uri,
@@ -421,7 +425,7 @@ private fun EpgSourceSheet(
                 val portal = tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(option.url) != null
                 tv.own.owntv.mobile.ui.stage.StageSettingRow(
                     title = option.name,
-                    subtitle = if (portal) stringResource(R.string.settings_epg_sources_portal_guide) else tv.own.owntv.core.network.HttpClient.redactUrl(option.url),
+                    subtitle = if (portal) stringResource(R.string.settings_epg_sources_portal_guide) else null,
                     onClick = {
                         showPlaylists = false
                         if (portal) {

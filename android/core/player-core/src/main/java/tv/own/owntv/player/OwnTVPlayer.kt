@@ -4525,7 +4525,8 @@ class OwnTVPlayer(
             val out = ArrayList<StreamInfoRow>()
             out += StreamInfoRow(StreamInfoLabel.ENGINE, StreamInfoValue.Engine(StreamEngine.EXOPLAYER, mode))
             out += exoEngine?.streamInfo().orEmpty()
-            currentUrl?.let { out += StreamInfoRow(StreamInfoLabel.SOURCE, StreamInfoValue.Source(HttpClient.redactUrl(it))) }
+            // Hidden to avoid exposing the provider URL in the player information display.
+        // currentUrl?.let { out += StreamInfoRow(StreamInfoLabel.SOURCE, StreamInfoValue.Source(HttpClient.redactUrl(it))) }
             return out
         }
         return readOnMpv { mpvStreamInfo(it) } ?: emptyList()
@@ -4639,7 +4640,8 @@ class OwnTVPlayer(
                 ),
             )
         }
-        currentUrl?.let { out += StreamInfoRow(StreamInfoLabel.SOURCE, StreamInfoValue.Source(HttpClient.redactUrl(it))) }
+        // Hidden to avoid exposing the provider URL in the player information display.
+        // currentUrl?.let { out += StreamInfoRow(StreamInfoLabel.SOURCE, StreamInfoValue.Source(HttpClient.redactUrl(it))) }
         return out
     }
 

@@ -21,6 +21,8 @@ import java.util.concurrent.Executors
  * path never blocks. Timestamps are wall-clock (for display), unlike the monotonic diagnostics.
  */
 object PlaybackErrorLog {
+    // Set true to restore playback error logging.
+    private const val COLLECTION_ENABLED = false
     private const val MAX = 25
     private const val FILE_NAME = "playback_errors.json"
     private const val EXPORT_NAME = "owntv-playback-report.txt"
@@ -183,6 +185,7 @@ object PlaybackErrorLog {
     }
 
     private fun append(context: Context, entry: Entry) {
+        if (!COLLECTION_ENABLED) return
         val appContext = context.applicationContext
         io.execute {
             runCatching {
@@ -204,7 +207,7 @@ object PlaybackErrorLog {
     private fun androidVersion(): String = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
 
     /** Newest-first list for the Settings viewer. Safe to call from a coroutine on Dispatchers.IO. */
-    fun read(context: Context): List<Entry> = runCatching { readSync(context).reversed() }.getOrDefault(emptyList())
+    fun read(context: Context): List<Entry> = if (!COLLECTION_ENABLED) emptyList() else runCatching { readSync(context).reversed() }.getOrDefault(emptyList())
 
     /**
      * Clear the log. Queued on the same single thread the appends use, so an append that had already read
@@ -290,7 +293,7 @@ object PlaybackErrorLog {
      * needs no storage permission and creates the standard folder when necessary; Android 8–9 creates
      * the directory directly. Runs synchronously on the caller's IO dispatcher; the file is a few kB.
      */
-    fun export(context: Context): String? = runCatching {
+    fun export(context: Context): String? = if (!COLLECTION_ENABLED) null else runCatching {
         val appContext = context.applicationContext
         val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
         val text = buildString {

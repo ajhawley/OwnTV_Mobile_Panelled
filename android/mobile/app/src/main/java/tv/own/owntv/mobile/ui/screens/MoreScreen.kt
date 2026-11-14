@@ -16,26 +16,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import tv.own.owntv.core.database.dao.SourceDao
@@ -53,12 +48,9 @@ import tv.own.owntv.mobile.ui.stage.LocalStagePalette
 import tv.own.owntv.mobile.ui.stage.StageButton
 import tv.own.owntv.mobile.ui.stage.StageGroupLabel
 import tv.own.owntv.mobile.ui.stage.StageMenuItem
-import tv.own.owntv.mobile.ui.stage.StageTag
-import tv.own.owntv.mobile.ui.stage.StageTagTone
 import tv.own.owntv.mobile.ui.stage.stageClickable
 import tv.own.owntv.mobile.ui.stage.stageGlass
 import tv.own.owntv.mobile.ui.stage.stageText
-import tv.own.owntv.player.PlaybackErrorLog
 
 /**
  * More, opened from the avatar: the profile card with **Switch**, then Settings and Downloads, YOUR
@@ -85,19 +77,12 @@ fun MoreScreen(
     val history by counts.history.collectAsStateWithLifecycle()
     val pinned by counts.pinnedCount.collectAsStateWithLifecycle()
     val running by counts.runningDownloads.collectAsStateWithLifecycle()
-    val lastBackup by counts.lastBackup.collectAsStateWithLifecycle()
-    val syncOn by counts.syncOn.collectAsStateWithLifecycle()
     val profiles by profilesVm.profiles.collectAsStateWithLifecycle()
     val activeId by profilesVm.activeProfileId.collectAsStateWithLifecycle()
     val playlists by shell.playlists.collectAsStateWithLifecycle()
     val activePlaylistId by shell.activePlaylistId.collectAsStateWithLifecycle()
     val profile = profiles.orEmpty().firstOrNull { it.id == activeId }
 
-    // The log is a file, not a flow: read again whenever More comes back (an export or a clear on its page).
-    val context = LocalContext.current
-    var logVersion by remember { mutableStateOf(0) }
-    LifecycleResumeEffect(Unit) { logVersion++; onPauseOrDispose { } }
-    val logCount by produceState(0, logVersion) { value = withContext(Dispatchers.IO) { PlaybackErrorLog.read(context).size } }
 
     val listState = rememberLazyListState()
     listState.ObeyScrollToTop(route = MobileDestination.MORE.route, scrollToTop = scrollToTop)
@@ -132,24 +117,6 @@ fun MoreScreen(
                 StageGroupLabel(stringResource(R.string.more_group_your_things))
                 MoreItem(R.string.content_category_favorites, MobileIcons.FavoriteBorder, favorites.total.toString()) { onOpenLeaf(MoreLeaf.FAVORITES) }
                 MoreItem(R.string.content_category_history, MobileIcons.History, history.total.toString()) { onOpenLeaf(MoreLeaf.HISTORY) }
-                StageGroupLabel(stringResource(R.string.more_group_keep_safe))
-                // Never backed up is the one row that warns (`.tag.warn`); a backup says how long ago.
-                val backupValue = lastBackup?.let { relativeShort(it.at) }
-                StageMenuItem(
-                    label = stringResource(R.string.settings_backup_restore),
-                    onClick = { onOpenLeaf(MoreLeaf.BACKUP) },
-                    icon = MobileIcons.Download,
-                    count = backupValue,
-                    tags = if (backupValue == null) {
-                        { StageTag(stringResource(R.string.common_never), tone = StageTagTone.WARN, icon = MobileIcons.Warning) }
-                    } else null,
-                    height = 48.dp,
-                    chevron = true,
-                )
-                MoreItem(R.string.local_sync_title, MobileIcons.Phone, stringResource(if (syncOn) R.string.common_on else R.string.common_off)) { onOpenLeaf(MoreLeaf.LOCAL_SYNC) }
-                StageGroupLabel(stringResource(R.string.settings_app_group))
-                MoreItem(R.string.settings_playback_error_log, MobileIcons.Warning, logCount.toString()) { onOpenLeaf(MoreLeaf.ERROR_LOG) }
-                MoreItem(R.string.settings_about, MobileIcons.Info, BuildConfig.VERSION_NAME) { onOpenLeaf(MoreLeaf.ABOUT) }
 
                 // Dev-only and English-only: R8 removes the row from a published build.
                 if (BuildConfig.DEV_TOOLS) {

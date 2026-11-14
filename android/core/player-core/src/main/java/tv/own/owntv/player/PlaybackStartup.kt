@@ -35,7 +35,7 @@ object PlaybackStartup {
         // live engine first happens to be built.
         scope.launch {
             settings.detailedDiagnostics.collect { on ->
-                LiveDiagnosticsLog.enabled = on || CoreBuildInfo.debug || CoreBuildInfo.diagnosticBuild
+                LiveDiagnosticsLog.enabled = LiveDiagnosticsLog.COLLECTION_ENABLED && (on || CoreBuildInfo.debug || CoreBuildInfo.diagnosticBuild)
             }
         }
         scope.launch { settings.runOneTimeMigrations() }

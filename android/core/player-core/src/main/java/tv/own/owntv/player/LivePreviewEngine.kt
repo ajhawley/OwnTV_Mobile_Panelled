@@ -681,7 +681,8 @@ class LivePreviewEngine(
                 ),
             )
         }
-        currentUrl?.let { out += StreamInfoRow(StreamInfoLabel.SOURCE, StreamInfoValue.Source(HttpClient.redactUrl(it))) }
+        // Hidden to avoid exposing the provider URL in the player information display.
+        // currentUrl?.let { out += StreamInfoRow(StreamInfoLabel.SOURCE, StreamInfoValue.Source(HttpClient.redactUrl(it))) }
         return out
     }
     /** Recompute the preview's mini chips (aspect · resolution · fps · audio · bitrate) from the active
