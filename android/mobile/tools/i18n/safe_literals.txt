@@ -299,9 +299,6 @@
 1	technical	app/src/main/java/tv/own/owntv/mobile/ui/screens/search/SearchScreen.kt	s
 1	technical	app/src/main/java/tv/own/owntv/mobile/ui/screens/search/SearchScreen.kt	★
 2	empty	app/src/main/java/tv/own/owntv/mobile/ui/screens/search/SearchViewModel.kt	\0
-1	technical	app/src/main/java/tv/own/owntv/mobile/ui/screens/settings/AddSourcePage.kt	existing
-1	technical	app/src/main/java/tv/own/owntv/mobile/ui/screens/settings/AddSourcePage.kt	import
-1	technical	app/src/main/java/tv/own/owntv/mobile/ui/screens/settings/AddSourcePage.kt	remote
 1	technical	app/src/main/java/tv/own/owntv/mobile/ui/screens/settings/AddSourcePage.kt	type
 1	log	app/src/main/java/tv/own/owntv/mobile/ui/screens/settings/BackupViewModel.kt	backup target unavailable
 1	file-path	app/src/main/java/tv/own/owntv/mobile/ui/screens/settings/BackupViewModel.kt	backup-export

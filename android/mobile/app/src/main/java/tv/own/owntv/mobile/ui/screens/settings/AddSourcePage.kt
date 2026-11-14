@@ -42,6 +42,17 @@ import tv.own.owntv.mobile.ui.stage.stageText
  */
 @Composable
 fun AddSourcePage(onSetup: (SetupEntry) -> Unit, modifier: Modifier = Modifier, vm: SetupViewModel = koinViewModel()) {
+    SettingsStagePage(modifier) {
+        item(key = "type") {
+            SourceCard(MobileIcons.Edit, stringResource(R.string.settings_add_type_here), stringResource(R.string.settings_line_add_type_here_mobile)) {
+                vm.consumeRemotePayload()
+                onSetup(SetupEntry.FORM)
+            }
+        }
+    }
+
+    /*
+     * Original chooser options retained but hidden for this custom build:
     var remote by remember { mutableStateOf(false) }
     var hasExisting by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { hasExisting = runCatching { vm.availableExistingSources().isNotEmpty() }.getOrDefault(false) }
@@ -75,6 +86,8 @@ fun AddSourcePage(onSetup: (SetupEntry) -> Unit, modifier: Modifier = Modifier, 
     }
 
     if (remote) RemoteSourceSheet(vm, onReceived = { remote = false; onSetup(SetupEntry.FORM) }, onDismiss = { remote = false })
+     */
+
 }
 
 /**
