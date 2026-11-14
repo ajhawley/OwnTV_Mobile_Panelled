@@ -203,7 +203,7 @@
     <!-- Translators: Default profile name used when the user leaves the profile name blank during first-run setup. -->
     <string name="setup_default_profile">Profile</string>
     <!-- Translators: Text-field label for the Xtream server URL. Shown on the TV form and companion web page. -->
-    <string name="setup_server_url">Server URL</string>
+    <string name="setup_server_url">Server</string>
     <!-- Translators: Placeholder example in the Xtream server URL field. "host:port" is a generic example. -->
     <string name="setup_server_example">http://host:port</string>
     <!-- Translators: Text-field label for the Xtream username. Shown on the TV form and companion web page. -->

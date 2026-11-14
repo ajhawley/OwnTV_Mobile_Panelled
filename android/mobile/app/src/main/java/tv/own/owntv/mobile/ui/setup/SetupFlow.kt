@@ -167,7 +167,14 @@ fun SetupFlow(
     val atStart = step == entryStep
     // Back from the step this flow was entered on leaves it, back to Settings' Add a source.
     val leave: () -> Unit = { vm.reset(); onCancel?.invoke() }
-    val backFromForm: () -> Unit = { if (entryStep == Step.FORM) leave() else { vm.reset(); step = Step.ADD_CONTENT } }
+    val backFromForm: () -> Unit = {
+        vm.reset()
+        when {
+            firstRun -> step = Step.CREATE_PROFILE
+            entryStep == Step.FORM -> leave()
+            else -> step = Step.ADD_CONTENT
+        }
+    }
     val backFromRestore: () -> Unit = {
         vm.reset(); restoreFile = null; restoreSections = null
         if (entryStep == Step.RESTORE) leave() else step = backupOrigin
@@ -201,7 +208,7 @@ fun SetupFlow(
 
     Box(modifier = modifier.fillMaxSize()) {
         when (step) {
-            Step.WELCOME -> WelcomeStep(onNext = { step = Step.DISPLAY_SIZE })
+            Step.WELCOME -> WelcomeStep(onNext = { step = Step.CREATE_PROFILE })
             // Before the disclaimer, which is the first screen that is mostly words: if the text is
             // too small to read, that is the screen it first hurts on.
             Step.DISPLAY_SIZE -> DisplaySizeStep(onNext = { step = Step.DISCLAIMER }, onBack = { step = Step.WELCOME })
@@ -217,9 +224,12 @@ fun SetupFlow(
             Step.SYNC_DEVICE -> SetupLocalSyncStep(onRestored = { vm.finish(onDone) }, onBack = { step = Step.CHOICE })
             Step.CREATE_PROFILE -> ProfileStep(
                 onCreate = { name, avatar, kids, pin, picture ->
-                    vm.createProfile(name.ifBlank { defaultProfileName }, avatar, kids, pin, picture) { step = Step.ADD_CONTENT }
+                    vm.createProfile(name.ifBlank { defaultProfileName }, avatar, kids, pin, picture) {
+                        importOrigin = Step.FORM
+                        step = Step.FORM
+                    }
                 },
-                onBack = { step = Step.CHOICE },
+                onBack = { step = Step.WELCOME },
             )
             Step.ADD_CONTENT -> AddContentStep(
                 vm = vm,
@@ -274,7 +284,6 @@ fun SetupFlow(
                 progress = progress,
                 name = importName,
                 onContinue = { vm.finish(onDone) },
-                onAddGuide = { SetupHandoff.requestAddEpg(); vm.finish(onDone) },
                 onRunInBackground = { vm.continueInBackground(onDone) },
                 onRetry = { vm.reset(); step = importOrigin },
                 onCancel = { vm.cancelImport(); step = importOrigin },
@@ -320,7 +329,6 @@ private fun ImportProgress(
     progress: ImportStage?,
     name: String?,
     onContinue: () -> Unit,
-    onAddGuide: () -> Unit,
     onRunInBackground: () -> Unit,
     onRetry: () -> Unit,
     onCancel: () -> Unit,
@@ -338,14 +346,7 @@ private fun ImportProgress(
             next = stringResource(R.string.setup_continue),
             onNext = onContinue,
             onBack = null,
-        ) {
-            StageSettingRow(
-                title = stringResource(R.string.setup_add_guide),
-                icon = MobileIcons.Guide,
-                subtitle = stringResource(R.string.setup_add_guide_line),
-                onClick = onAddGuide,
-            ) { StageRowValue("", StageChevron.FORWARD) }
-        }
+        )
         is SourceImporter.ImportState.Failed -> WizardFrame(
             step = WizardStep.PLAYLIST,
             title = stringResource(R.string.setup_import_failed),

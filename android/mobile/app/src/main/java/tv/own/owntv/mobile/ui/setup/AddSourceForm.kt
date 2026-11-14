@@ -196,6 +196,7 @@ fun AddSourceForm(
         modifier = modifier.fillMaxSize().imePadding(),
         contentPadding = PaddingValues(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 100.dp),
     ) {
+/*
         if (!editing) {
             item(key = "kind") {
                 // Stalker portals answer one item at a time, so a full film catalogue on the spot is an hour of
@@ -215,9 +216,7 @@ fun AddSourceForm(
                 )
             }
         }
-        item(key = "name") {
-            StageTextRow(MobileIcons.Edit, stringResource(R.string.setup_source_name_optional), name, { name = it }, placeholder = stringResource(R.string.setup_default_iptv))
-        }
+*/
         when (kind) {
             SourceKind.XTREAM -> {
                 item(key = "server") {
@@ -278,7 +277,18 @@ fun AddSourceForm(
                         }
                     }
                 }
-                item(key = "user") { StageTextRow(MobileIcons.Person, stringResource(R.string.setup_username), username, { username = it }) }
+                item(key = "name") {
+                    StageTextRow(
+                        MobileIcons.Edit,
+                        stringResource(R.string.setup_source_name_optional),
+                        name,
+                        { name = it },
+                        placeholder = stringResource(R.string.setup_default_iptv),
+                    )
+                }
+                item(key = "user") {
+                    StageTextRow(MobileIcons.Person, stringResource(R.string.setup_username), username, { username = it })
+                }
                 item(key = "pass") {
                     StageTextRow(
                         MobileIcons.Lock, stringResource(if (editing) R.string.setup_password_keep else R.string.setup_password),
@@ -349,13 +359,14 @@ fun AddSourceForm(
                 }
             }
         }
-        item(key = "optional") { StageSectionHead(stringResource(R.string.settings_form_optional)) }
+       /*
+	 item(key = "optional") { StageSectionHead(stringResource(R.string.settings_form_optional)) }
         item(key = "ua") {
             StageTextRow(MobileIcons.Edit, stringResource(R.string.setup_user_agent_optional), userAgent, { userAgent = it }, placeholder = stringResource(R.string.setup_user_agent_example))
         }
         item(key = "referer") {
             StageTextRow(MobileIcons.Edit, stringResource(R.string.setup_referer_optional), httpReferer, { httpReferer = it }, placeholder = stringResource(R.string.setup_referer_example))
-        }
+        }*/
         item(key = "refresh") {
             StageSettingRow(
                 icon = MobileIcons.Schedule,
