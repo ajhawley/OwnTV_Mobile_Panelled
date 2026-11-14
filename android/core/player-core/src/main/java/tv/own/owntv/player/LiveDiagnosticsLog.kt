@@ -112,7 +112,7 @@ object LiveDiagnosticsLog {
     }
 
     /** Oldest-first snapshot of the in-memory ring buffer (e.g. for an in-app export action). */
-    fun snapshot(): String = if (!COLLECTION_ENABLED) "" else synchronized(lock) { ring.joinToString("\n") }
+    fun snapshot(): String = if (COLLECTION_ENABLED) synchronized(lock) { ring.joinToString("\n") } else buildString {}
 
     /** Path of the rolling diagnostic file on disk, once [init] has run. */
     fun file(): File? = if (!COLLECTION_ENABLED) null else logFile

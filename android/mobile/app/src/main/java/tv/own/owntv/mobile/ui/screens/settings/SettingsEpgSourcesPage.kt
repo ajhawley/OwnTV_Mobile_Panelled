@@ -333,7 +333,7 @@ private fun EpgSourceSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
             StageField(
-                value = if (!urlEdited) "" else url,
+                value = url.takeIf { urlEdited }.orEmpty(),
                 onValueChange = {
                     urlEdited = true
                     url = it
