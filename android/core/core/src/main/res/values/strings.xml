@@ -312,4 +312,22 @@
     <string name="setup_panel_server_select">Select</string>
     <!-- Translators: Error shown when the app cannot retrieve server choices from the administrator panel. -->
     <string name="setup_panel_server_load_error">Unable to load servers. Check your connection and tap to retry.</string>
+    <!-- Translators: Heading for the app installation's approval status from the OwnTV administrator panel. -->
+    <string name="setup_panel_device_title">Device approval</string>
+    <!-- Translators: Status shown before the app has completed its first registration request. -->
+    <string name="setup_panel_device_unknown">Registering this device with your administrator panel.</string>
+    <!-- Translators: Temporary status while the app contacts the administrator panel. -->
+    <string name="setup_panel_device_checking">Checking device registration…</string>
+    <!-- Translators: The administrator must approve this device before provider choices appear. -->
+    <string name="setup_panel_device_pending">Waiting for administrator approval. Tap to check again.</string>
+    <!-- Translators: The administrator approved this device and provider choices can be loaded. -->
+    <string name="setup_panel_device_active">This device is approved. Server choices are available.</string>
+    <!-- Translators: The administrator blocked this device; support must unblock it. -->
+    <string name="setup_panel_device_blocked">This device has been blocked. Contact your administrator.</string>
+    <!-- Translators: The administrator permanently revoked this device registration. -->
+    <string name="setup_panel_device_revoked">This device registration has been revoked. Contact your administrator.</string>
+    <!-- Translators: The saved device registration cannot be matched to its panel token. -->
+    <string name="setup_panel_device_conflict">This device registration needs administrator attention.</string>
+    <!-- Translators: Action that retries device registration to check whether an administrator approved it. -->
+    <string name="setup_panel_device_check">Check approval</string>
 </resources>

@@ -15,6 +15,7 @@ import tv.own.owntv.mobile.ui.profiles.ProfileGateSession
 import tv.own.owntv.mobile.ui.profiles.ProfilesViewModel
 import tv.own.owntv.mobile.ui.screens.ContentActions
 import tv.own.owntv.mobile.ui.screens.settings.BackupViewModel
+import tv.own.owntv.mobile.ui.setup.PanelServerRepository
 import tv.own.owntv.mobile.ui.setup.SetupViewModel
 import tv.own.owntv.mobile.ui.shell.ShellViewModel
 import tv.own.owntv.mobile.ui.shell.StartupLiveSelection
@@ -49,5 +50,6 @@ val shellModule = module {
     // An import has to outlive the wizard screen that started it — "Run in background" is exactly
     // that promise — so it runs here rather than in a ViewModel that dies with its navigation entry.
     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
-    viewModel { SetupViewModel(get(), get(), get(), get(), androidContext(), get(), get()) }
+    single { PanelServerRepository(androidContext()) }
+    viewModel { SetupViewModel(get(), get(), get(), get(), androidContext(), get(), get(), get(), get()) }
 }

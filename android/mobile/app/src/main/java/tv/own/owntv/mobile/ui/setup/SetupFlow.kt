@@ -258,10 +258,12 @@ fun SetupFlow(
                 AddSourceForm(
                     // Remote's submission fills the form; the user still presses Start import.
                     initial = remoteInitial,
-                    panelServers = panelServerState.servers,
+                    panelServers = panelServerState.servers.filter { it.enabled },
                     panelServersLoading = panelServerState.isLoading,
                     panelServersError = panelServerState.error,
+                    panelDeviceStatus = panelServerState.deviceStatus,
                     onRefreshPanelServers = vm::refreshPanelServers,
+                    onCheckPanelApproval = vm::refreshPanelServers,
                     onStartXtream = { name, server, user, pass, ua, referer, refresh, live, movies, series, hls ->
                         importName = name.ifBlank { defaultIptvName }
                         vm.startXtream(importName!!, server, user, pass, ua, referer, refresh, live, movies, series, hls)

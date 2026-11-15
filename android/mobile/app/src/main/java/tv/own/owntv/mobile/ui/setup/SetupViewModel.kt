@@ -13,9 +13,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tv.own.owntv.core.backup.BackupManager
 import tv.own.owntv.core.database.dao.ProfileDao
+import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.database.entity.SourceEntity
+import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.setup.SourceImporter
 import tv.own.owntv.core.sync.SyncScopeChoice
 import tv.own.owntv.mobile.R
@@ -42,9 +44,10 @@ class SetupViewModel(
     private val context: Context,
     private val companion: tv.own.owntv.core.companion.CompanionController,
     private val profiles: tv.own.owntv.core.profile.ProfileManager,
+    private val sourceDao: SourceDao,
+    private val panelServerRepository: PanelServerRepository,
 ) : ViewModel() {
 
-    private val panelServerRepository = PanelServerRepository()
     private val _panelServerState = MutableStateFlow(PanelServerUiState())
     val panelServerState = _panelServerState.asStateFlow()
     private var panelServerJob: Job? = null
@@ -57,20 +60,63 @@ class SetupViewModel(
             _panelServerState.value = _panelServerState.value.copy(
                 isLoading = true,
                 error = null,
+                deviceStatus = PanelDeviceStatus.CHECKING,
             )
 
             try {
+                val registration = panelServerRepository.registerDevice()
+                if (registration.status != PanelDeviceStatus.ACTIVE) {
+                    _panelServerState.value = PanelServerUiState(deviceStatus = registration.status)
+                    return@launch
+                }
+
                 val servers = panelServerRepository.loadServers()
-                _panelServerState.value = PanelServerUiState(servers = servers)
+                try {
+                    syncPanelProviderAssociations(servers)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Provider association sync retries on the next panel refresh.
+                }
+                _panelServerState.value = PanelServerUiState(
+                    servers = servers,
+                    deviceStatus = PanelDeviceStatus.ACTIVE,
+                )
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Exception) {
-                _panelServerState.value = _panelServerState.value.copy(
-                    isLoading = false,
+            } catch (error: PanelApiException) {
+                val deviceStatus = when (error.errorCode) {
+                    "device_pending" -> PanelDeviceStatus.PENDING
+                    "device_blocked" -> PanelDeviceStatus.BLOCKED
+                    "device_revoked" -> PanelDeviceStatus.REVOKED
+                    "device_token_invalid", "device_auth_required" -> PanelDeviceStatus.CONFLICT
+                    else -> PanelDeviceStatus.UNKNOWN
+                }
+                _panelServerState.value = PanelServerUiState(
                     error = context.getString(R.string.setup_panel_server_load_error),
+                    deviceStatus = deviceStatus,
+                )
+            } catch (_: Exception) {
+                _panelServerState.value = PanelServerUiState(
+                    error = context.getString(R.string.setup_panel_server_load_error),
+                    deviceStatus = PanelDeviceStatus.UNKNOWN,
                 )
             }
         }
+    }
+
+    /** Reconcile every locally configured Xtream source with its server-side provider UUID. */
+    private suspend fun syncPanelProviderAssociations(servers: List<PanelServer>) {
+        val serverIds = sourceDao.getAllOnce()
+            .asSequence()
+            .filter { it.type == SourceType.XTREAM }
+            .mapNotNull { source ->
+                val sourceUrl = source.url.trim().trimEnd('/')
+                servers.firstOrNull { it.baseUrl.trimEnd('/') == sourceUrl }?.id
+            }
+            .distinct()
+            .toList()
+        panelServerRepository.updateProviderAssociations(serverIds)
     }
 
     // ---- Remote: another device fills the form in a browser; the phone pre-fills its own form. ----
@@ -104,6 +150,15 @@ class SetupViewModel(
             userAgent = userAgent, httpReferer = httpReferer, autoRefresh = autoRefresh,
             live = live, movies = movies, series = series, preferHls = preferHls,
         )
+        if (_panelServerState.value.deviceStatus == PanelDeviceStatus.ACTIVE) {
+            try {
+                syncPanelProviderAssociations(panelServerRepository.loadServers())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // A future refresh reconciles the app's local provider list with the panel.
+            }
+        }
     }
 
     fun startM3u(name: String, url: String, userAgent: String, httpReferer: String, autoRefresh: PlaylistRefresh) =

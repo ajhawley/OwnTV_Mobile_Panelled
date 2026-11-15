@@ -166,6 +166,28 @@ class OwnTVMobileApp : Application(), androidx.work.Configuration.Provider {
                 downloadsModule, settingsModule, sportsModule,
             )
         }
+        // Register this installation with the administrator panel. Pending devices appear in
+        // the Devices page immediately; provider configuration is still fetched only after approval.
+        appScope.launch {
+            runCatching {
+                val koin = GlobalContext.get()
+                val panel = koin.get<tv.own.owntv.mobile.ui.setup.PanelServerRepository>()
+                val registration = panel.registerDevice()
+                if (registration.status == tv.own.owntv.mobile.ui.setup.PanelDeviceStatus.ACTIVE) {
+                    val servers = panel.loadServers()
+                    val sources = koin.get<tv.own.owntv.core.database.dao.SourceDao>().getAllOnce()
+                    val providerIds = sources.asSequence()
+                        .filter { it.type == tv.own.owntv.core.model.SourceType.XTREAM }
+                        .mapNotNull { source ->
+                            val sourceUrl = source.url.trim().trimEnd('/')
+                            servers.firstOrNull { it.baseUrl.trimEnd('/') == sourceUrl }?.id
+                        }
+                        .distinct()
+                        .toList()
+                    panel.updateProviderAssociations(providerIds)
+                }
+            }
+        }
         // Sports: core decides from Auto rebuild whether the stored board is due ("on every app start", or
         // older than the chosen hours) — well after launch, so it never competes with the first screen.
         appScope.launch {

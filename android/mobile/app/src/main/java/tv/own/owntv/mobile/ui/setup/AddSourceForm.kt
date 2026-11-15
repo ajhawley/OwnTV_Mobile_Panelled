@@ -105,7 +105,9 @@ fun AddSourceForm(
     panelServers: List<PanelServer> = emptyList(),
     panelServersLoading: Boolean = false,
     panelServersError: String? = null,
+    panelDeviceStatus: PanelDeviceStatus = PanelDeviceStatus.UNKNOWN,
     onRefreshPanelServers: (() -> Unit)? = null,
+    onCheckPanelApproval: (() -> Unit)? = null,
 ) {
     val editing = onSave != null
     var serverMenuExpanded by remember { mutableStateOf(false) }
@@ -196,6 +198,43 @@ fun AddSourceForm(
         modifier = modifier.fillMaxSize().imePadding(),
         contentPadding = PaddingValues(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 100.dp),
     ) {
+        if (!editing) {
+            item(key = "panel-device-approval") {
+                val statusText = when (panelDeviceStatus) {
+                    PanelDeviceStatus.CHECKING -> stringResource(R.string.setup_panel_device_checking)
+                    PanelDeviceStatus.PENDING -> stringResource(R.string.setup_panel_device_pending)
+                    PanelDeviceStatus.ACTIVE -> stringResource(R.string.setup_panel_device_active)
+                    PanelDeviceStatus.BLOCKED -> stringResource(R.string.setup_panel_device_blocked)
+                    PanelDeviceStatus.REVOKED -> stringResource(R.string.setup_panel_device_revoked)
+                    PanelDeviceStatus.CONFLICT -> stringResource(R.string.setup_panel_device_conflict)
+                    PanelDeviceStatus.UNKNOWN -> stringResource(R.string.setup_panel_device_unknown)
+                }
+                val canCheck = panelDeviceStatus == PanelDeviceStatus.UNKNOWN ||
+                    panelDeviceStatus == PanelDeviceStatus.PENDING ||
+                    panelDeviceStatus == PanelDeviceStatus.BLOCKED
+                StageSettingRow(
+                    icon = MobileIcons.Lock,
+                    title = stringResource(R.string.setup_panel_device_title),
+                    subtitle = statusText,
+                    onClick = if (canCheck && !panelServersLoading) {
+                        {
+                            val check = onCheckPanelApproval ?: onRefreshPanelServers
+                            check?.invoke()
+                            Unit
+                        }
+                    } else null,
+                    trailing = {
+                        if (canCheck) {
+                            StageRowValue(
+                                value = stringResource(R.string.setup_panel_device_check),
+                                chevron = StageChevron.FORWARD,
+                                plain = true,
+                            )
+                        }
+                    },
+                )
+            }
+        }
 /*
         if (!editing) {
             item(key = "kind") {
@@ -235,23 +274,31 @@ fun AddSourceForm(
                             StageSettingRow(
                                 icon = MobileIcons.Translate,
                                 title = stringResource(R.string.setup_server_url),
-                                subtitle = when {
-                                    panelServersError != null -> panelServersError
-                                    panelServersLoading -> stringResource(R.string.setup_panel_server_loading)
-                                    panelServers.isEmpty() -> stringResource(R.string.setup_panel_server_empty)
-                                    else -> stringResource(R.string.setup_panel_server_choose)
+                                subtitle = when (panelDeviceStatus) {
+                                    PanelDeviceStatus.PENDING -> stringResource(R.string.setup_panel_device_pending)
+                                    PanelDeviceStatus.BLOCKED -> stringResource(R.string.setup_panel_device_blocked)
+                                    PanelDeviceStatus.REVOKED -> stringResource(R.string.setup_panel_device_revoked)
+                                    PanelDeviceStatus.CONFLICT -> stringResource(R.string.setup_panel_device_conflict)
+                                    PanelDeviceStatus.CHECKING -> stringResource(R.string.setup_panel_device_checking)
+                                    else -> when {
+                                        panelServersError != null -> panelServersError
+                                        panelServersLoading -> stringResource(R.string.setup_panel_server_loading)
+                                        panelServers.isEmpty() -> stringResource(R.string.setup_panel_server_empty)
+                                        else -> stringResource(R.string.setup_panel_server_choose)
+                                    }
                                 },
                                 onClick = {
-                                    if (panelServers.isNotEmpty()) {
-                                        serverMenuExpanded = true
-                                    } else if (!panelServersLoading) {
-                                        onRefreshPanelServers?.invoke()
+                                    when (panelDeviceStatus) {
+                                        PanelDeviceStatus.ACTIVE -> if (panelServers.isNotEmpty()) serverMenuExpanded = true
+                                        PanelDeviceStatus.BLOCKED, PanelDeviceStatus.REVOKED, PanelDeviceStatus.CONFLICT,
+                                        PanelDeviceStatus.CHECKING -> Unit
+                                        else -> if (!panelServersLoading) (onCheckPanelApproval ?: onRefreshPanelServers)?.invoke()
                                     }
                                 },
                                 trailing = {
                                     StageRowValue(
                                         value = selectedName ?: if (panelServersLoading) stringResource(R.string.setup_panel_server_loading_short) else stringResource(R.string.setup_panel_server_select),
-                                        chevron = if (panelServers.isNotEmpty()) {
+                                        chevron = if (panelDeviceStatus == PanelDeviceStatus.ACTIVE && panelServers.isNotEmpty()) {
                                             StageChevron.DOWN
                                         } else {
                                             StageChevron.NONE
@@ -261,7 +308,7 @@ fun AddSourceForm(
                             )
 
                             DropdownMenu(
-                                expanded = serverMenuExpanded,
+                                expanded = serverMenuExpanded && panelDeviceStatus == PanelDeviceStatus.ACTIVE,
                                 onDismissRequest = { serverMenuExpanded = false },
                             ) {
                                 panelServers.forEach { option ->
